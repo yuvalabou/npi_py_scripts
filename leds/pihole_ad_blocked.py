@@ -22,7 +22,7 @@ def checkLogTailResult():
     if p.poll(1):
         line = f.stdout.readline()
         if MATCH_STRING in line and FALSE_POS not in line:
-                alert(line)
+            alert(line)
 
 def checkPiholeStatus():
     if piholeIsEnabled():
