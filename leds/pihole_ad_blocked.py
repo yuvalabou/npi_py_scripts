@@ -33,7 +33,7 @@ p.register(f.stdout)
 def checkLogTailResult() -> None:
     """Tails PiHole log file."""
     if p.poll(1):
-        line = f.stdout.readline().encode("utf-8")
+        line = f.stdout.readline().decode("utf-8")
         if GRAVITY in line and FALSE_POS not in line:
             blocked(line)
         if FORWARDED in line and FALSE_POS not in line:
