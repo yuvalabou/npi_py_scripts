@@ -19,12 +19,10 @@ DISABLE_FILE = "/etc/pihole/gravity.list.bck"
 controller = Controller()
 controller.available_pins = NANOPI_NEO_2
 
-# Allocate a pin as Output signal
 red = controller.alloc_pin(203, OUTPUT)
 yellow = controller.alloc_pin(200, OUTPUT)
 green = controller.alloc_pin(198, OUTPUT)
 
-# Tail Pihole logfile
 f = subprocess.Popen(
     ["tail", "-F", LOG_FILE], stdout=subprocess.PIPE, stderr=subprocess.PIPE
 )
@@ -32,9 +30,10 @@ p = poll()
 p.register(f.stdout)
 
 
-def checkLogTailResult():
+def checkLogTailResult() -> None:
+    """Tails PiHole log file."""
     if p.poll(1):
-        line = f.stdout.readline().encode('utf-8')
+        line = f.stdout.readline().encode("utf-8")
         if GRAVITY in line and FALSE_POS not in line:
             blocked(line)
         if FORWARDED in line and FALSE_POS not in line:
@@ -42,28 +41,29 @@ def checkLogTailResult():
         if CACHED in line and FALSE_POS not in line:
             cached(line)
 
-def forwarded(logLine, blinkTime=0.2):
+
+def forwarded(logLine, blinkTime=0.2) -> None:
+    """Blink on forwarded quary."""
     print("Forwarded  ==>  " + logLine)
     yellow.high()
     sleep(blinkTime)
     yellow.low()
-    sleep(0.1)
 
 
-def cached(logLine, blinkTime=0.2):
+def cached(logLine, blinkTime=0.2) -> None:
+    """Blink on cached quary."""
     print("Cached  ==>  " + logLine)
     green.high()
     sleep(blinkTime)
     green.low()
-    sleep(0.1)
 
 
-def blocked(logLine, blinkTime=0.2):
+def blocked(logLine, blinkTime=0.2) -> None:
+    """Blink on blocked quary."""
     print("Ad Blocked!  ==>  " + logLine)
     red.high()
     sleep(blinkTime)
     red.low()
-    sleep(0.1)
 
 
 # Main loop
