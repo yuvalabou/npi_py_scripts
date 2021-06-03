@@ -1,70 +1,73 @@
 """App to blink an LED each time a quary has been blocked."""
-
-import RPi.GPIO as GPIO #https://github.com/friendlyarm/RPi.GPIO_NP
-from time import sleep
 import subprocess
-import os
-import signal
-import atexit
 from select import poll
+from time import sleep
 
-# Settings
-alertPin = 25
-statusPin = 24
+from pysysfs.boards import NANOPI_NEO_2
+from pysysfs.const import OUTPUT
+from pysysfs.Controller import Controller
+from twisted.internet import reactor
+from twisted.internet.task import LoopingCall
 
 LOG_FILE = "/var/log/pihole.log"
-MATCH_STRING = "/etc/pihole/gravity.list"
+GRAVITY = "gravity"
+FORWARDED = "forwarded"
+CACHED = "cached"
 FALSE_POS = "read /etc/pihole/gravity.list"
 DISABLE_FILE = "/etc/pihole/gravity.list.bck"
 
-# Functions
-def checkLogTailResult():
-    if p.poll(1):
-        line = f.stdout.readline()
-        if MATCH_STRING in line and FALSE_POS not in line:
-            alert(line)
+controller = Controller()
+controller.available_pins = NANOPI_NEO_2
 
-def checkPiholeStatus():
-    if piholeIsEnabled():
-        GPIO.output(statusPin, GPIO.HIGH)
-    else:
-        GPIO.output(statusPin, GPIO.LOW)
-
-def piholeIsEnabled():
-    return not os.path.isfile(DISABLE_FILE)
-
-def alert(logLine, blinkTime = .2):
-    print("Ad Blocked!  ==>  " + logLine)
-    GPIO.output(alertPin, GPIO.HIGH)
-    sleep(blinkTime)
-    GPIO.output(alertPin, GPIO.LOW)
-    #make sure led blinks instead of staying on continuously when multiple ads are blocked in short succession
-    sleep(.1)
-
-def handleExit():
-    print("Cleaning up GPIO...")
-    GPIO.output(alertPin, GPIO.LOW)
-    GPIO.output(statusPin, GPIO.LOW)
-    GPIO.cleanup()
-
-# Bind exit function
-atexit.register(handleExit)
-signal.signal(signal.SIGTERM, handleExit)
-signal.signal(signal.SIGINT, handleExit)
-
-# Setup GPIO pins
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(alertPin, GPIO.OUT)
-GPIO.setup(statusPin, GPIO.OUT)
+# Allocate a pin as Output signal
+red = controller.alloc_pin(203, OUTPUT)
+yellow = controller.alloc_pin(200, OUTPUT)
+green = controller.alloc_pin(201, OUTPUT)
 
 # Tail Pihole logfile
-f = subprocess.Popen(['tail','-F',LOG_FILE],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+f = subprocess.Popen(
+    ["tail", "-F", LOG_FILE], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+)
 p = poll()
 p.register(f.stdout)
 
+
+def checkLogTailResult():
+    if p.poll(1):
+        line = f.stdout.readline()
+        if GRAVITY in line and FALSE_POS not in line:
+            blocked(line)
+        if FORWARDED in line and FALSE_POS not in line:
+            forwarded(line)
+        if CACHED in line and FALSE_POS not in line:
+            cached(line)
+
+def forwarded(logLine, blinkTime=0.2):
+    print("Forwarded  ==>  " + logLine)
+    yellow.high()
+    sleep(blinkTime)
+    yellow.low()
+    sleep(0.1)
+
+
+def cached(logLine, blinkTime=0.2):
+    print("Forwarded  ==>  " + logLine)
+    green.high()
+    sleep(blinkTime)
+    green.low()
+    sleep(0.1)
+
+
+def blocked(logLine, blinkTime=0.2):
+    print("Ad Blocked!  ==>  " + logLine)
+    red.high()
+    sleep(blinkTime)
+    red.low()
+    sleep(0.1)
+
+
 # Main loop
-while True:
-    checkPiholeStatus()
-    checkLogTailResult()
-    #reduces load
-    sleep(.1)
+lc = LoopingCall(checkLogTailResult())
+lc.start(0.1)
+
+reactor.run()
