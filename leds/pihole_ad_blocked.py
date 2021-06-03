@@ -9,7 +9,7 @@ from pysysfs.Controller import Controller
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
-LOG_FILE = "/var/log/pihole.log"
+LOG_FILE = "/home/stack/pihole/log/pihole.log"
 GRAVITY = "gravity"
 FORWARDED = "forwarded"
 CACHED = "cached"
@@ -22,7 +22,7 @@ controller.available_pins = NANOPI_NEO_2
 # Allocate a pin as Output signal
 red = controller.alloc_pin(203, OUTPUT)
 yellow = controller.alloc_pin(200, OUTPUT)
-green = controller.alloc_pin(201, OUTPUT)
+green = controller.alloc_pin(198, OUTPUT)
 
 # Tail Pihole logfile
 f = subprocess.Popen(
@@ -34,7 +34,7 @@ p.register(f.stdout)
 
 def checkLogTailResult():
     if p.poll(1):
-        line = f.stdout.readline()
+        line = f.stdout.readline().encode('utf-8')
         if GRAVITY in line and FALSE_POS not in line:
             blocked(line)
         if FORWARDED in line and FALSE_POS not in line:
@@ -51,7 +51,7 @@ def forwarded(logLine, blinkTime=0.2):
 
 
 def cached(logLine, blinkTime=0.2):
-    print("Forwarded  ==>  " + logLine)
+    print("Cached  ==>  " + logLine)
     green.high()
     sleep(blinkTime)
     green.low()
@@ -67,7 +67,7 @@ def blocked(logLine, blinkTime=0.2):
 
 
 # Main loop
-lc = LoopingCall(checkLogTailResult())
+lc = LoopingCall(checkLogTailResult)
 lc.start(0.1)
 
 reactor.run()
