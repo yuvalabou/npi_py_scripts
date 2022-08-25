@@ -30,7 +30,7 @@ p = poll()
 p.register(f.stdout)
 
 
-def checkLogTailResult() -> None:
+def check_log_tail_result() -> None:
     """Tails PiHole log file."""
     if p.poll(1):
         line = f.stdout.readline().decode("utf-8")
@@ -42,32 +42,32 @@ def checkLogTailResult() -> None:
             cached(line)
 
 
-def forwarded(logLine, blinkTime=0.2) -> None:
+def forwarded(log_line, blink_time=0.2) -> None:
     """Blink on forwarded quary."""
-    print("Forwarded  ==>  " + logLine)
+    print("Forwarded  ==>  " + log_line)
     yellow.high()
-    sleep(blinkTime)
+    sleep(blink_time)
     yellow.low()
 
 
-def cached(logLine, blinkTime=0.2) -> None:
+def cached(log_line, blink_time=0.2) -> None:
     """Blink on cached quary."""
-    print("Cached  ==>  " + logLine)
+    print("Cached  ==>  " + log_line)
     green.high()
-    sleep(blinkTime)
+    sleep(blink_time)
     green.low()
 
 
-def blocked(logLine, blinkTime=0.2) -> None:
+def blocked(log_line, blink_time=0.2) -> None:
     """Blink on blocked quary."""
-    print("Ad Blocked!  ==>  " + logLine)
+    print("Ad Blocked!  ==>  " + log_line)
     red.high()
-    sleep(blinkTime)
+    sleep(blink_time)
     red.low()
 
 
 # Main loop
-lc = LoopingCall(checkLogTailResult)
+lc = LoopingCall(check_log_tail_result)
 lc.start(0.1)
 
 reactor.run()

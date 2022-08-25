@@ -1,14 +1,13 @@
 """Display basic system information."""
 
+import subprocess
+import time
+
+import psutil
 from luma.core.interface.serial import i2c
 from luma.core.render import canvas
 from luma.oled.device import ssd1306
-import time
-import psutil
 from PIL import ImageFont
-import socket
-import subprocess
-
 
 FONT = ImageFont.truetype("./fonts/DejaVuSansMono.ttf", 18)
 # ICON_FONT = ImageFont.truetype("./fonts/fontawesome-webfont.ttf", 10)
@@ -19,8 +18,10 @@ serial = i2c(port=0, address=0x3C)
 device = ssd1306(serial)
 
 
-with subprocess.Popen(['cat', MODEL], stdout=subprocess.PIPE, stderr=subprocess.PIPE) as line:
-    board = line.stdout.readline().decode("utf-8").rstrip('\x00')
+with subprocess.Popen(
+    ["cat", MODEL], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+) as line:
+    board = line.stdout.readline().decode("utf-8").rstrip("\x00")
 if board == "FriendlyElec NanoPi NEO3":
     THERMAL = "soc_thermal"
 elif board == "FriendlyARM NanoPi NEO 2":
@@ -49,6 +50,7 @@ def net_speed() -> str:
 
 
 def system_stats(device, thermal=THERMAL):
+    """Display system status."""
     timeout = time.time() + 20
     while True:
         test = 0
@@ -62,13 +64,17 @@ def system_stats(device, thermal=THERMAL):
             cpu_usage = psutil.cpu_percent(interval=None)
             draw.text((0, top), "CPU", font=FONT, fill=255)
             draw.rectangle((33, top + 4, 126, top + 16), outline=255, fill=0)
-            draw.rectangle((33, top + 4, 33 + cpu_usage, top + 16), outline=255, fill=255)
+            draw.rectangle(
+                (33, top + 4, 33 + cpu_usage, top + 16), outline=255, fill=255
+            )
 
             top = (((32 - h) + (h * 2)) / 2) + 1
             cpu_temp = psutil.sensors_temperatures()[thermal][0].current
             draw.text((0, top), "TMP", font=FONT, fill=255)
             draw.rectangle((33, top + 4, 126, top + 16), outline=255, fill=0)
-            draw.rectangle((33, top + 4, 33 + cpu_temp, top + 16), outline=255, fill=255)
+            draw.rectangle(
+                (33, top + 4, 33 + cpu_temp, top + 16), outline=255, fill=255
+            )
 
             top = (((32 - h) + (h * 3)) / 2) + 10
             mem = psutil.virtual_memory().percent
@@ -80,6 +86,7 @@ def system_stats(device, thermal=THERMAL):
 
 
 def net_stats(device):
+    """Display network status."""
     timeout = time.time() + 20
     while True:
         test = 0
